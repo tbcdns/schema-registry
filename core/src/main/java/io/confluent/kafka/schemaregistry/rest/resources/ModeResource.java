@@ -15,6 +15,7 @@
 
 package io.confluent.kafka.schemaregistry.rest.resources;
 
+import io.swagger.annotations.ApiParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +38,7 @@ import io.confluent.kafka.schemaregistry.exceptions.OperationNotPermittedExcepti
 import io.confluent.kafka.schemaregistry.exceptions.SchemaRegistryException;
 import io.confluent.kafka.schemaregistry.exceptions.SchemaRegistryRequestForwardingException;
 import io.confluent.kafka.schemaregistry.exceptions.SchemaRegistryStoreException;
-import io.confluent.kafka.schemaregistry.exceptions.UnknownMasterException;
+import io.confluent.kafka.schemaregistry.exceptions.UnknownLeaderException;
 import io.confluent.kafka.schemaregistry.rest.exceptions.Errors;
 import io.confluent.kafka.schemaregistry.rest.exceptions.RestInvalidModeException;
 import io.confluent.kafka.schemaregistry.storage.KafkaSchemaRegistry;
@@ -66,7 +67,7 @@ public class ModeResource {
   public ModeUpdateRequest updateMode(
       @PathParam("subject") String subject,
       @Context HttpHeaders headers,
-      @NotNull ModeUpdateRequest request
+      @ApiParam(value = "Update Request", required = true) @NotNull ModeUpdateRequest request
   ) {
     Mode mode;
     try {
@@ -75,17 +76,18 @@ public class ModeResource {
       throw new RestInvalidModeException();
     }
     try {
-      Map<String, String> headerProperties = requestHeaderBuilder.buildRequestHeaders(headers);
+      Map<String, String> headerProperties = requestHeaderBuilder.buildRequestHeaders(
+          headers, schemaRegistry.config().whitelistHeaders());
       schemaRegistry.setModeOrForward(subject, mode, headerProperties);
     } catch (OperationNotPermittedException e) {
       throw Errors.operationNotPermittedException(e.getMessage());
     } catch (SchemaRegistryStoreException e) {
       throw Errors.storeException("Failed to update mode", e);
-    } catch (UnknownMasterException e) {
-      throw Errors.unknownMasterException("Failed to update mode", e);
+    } catch (UnknownLeaderException e) {
+      throw Errors.unknownLeaderException("Failed to update mode", e);
     } catch (SchemaRegistryRequestForwardingException e) {
       throw Errors.requestForwardingFailedException("Error while forwarding update mode request"
-                                                    + " to the master", e);
+                                                    + " to the leader", e);
     }
 
     return request;
@@ -97,7 +99,7 @@ public class ModeResource {
     try {
       Mode mode = schemaRegistry.getMode(subject);
       if (mode == null) {
-        throw Errors.subjectNotFoundException();
+        throw Errors.subjectNotFoundException(subject);
       }
       return new ModeGetResponse(mode.name());
     } catch (SchemaRegistryException e) {
@@ -108,7 +110,7 @@ public class ModeResource {
   @PUT
   public ModeUpdateRequest updateTopLevelMode(
       @Context HttpHeaders headers,
-      @NotNull ModeUpdateRequest request) {
+      @ApiParam(value = "Update Request", required = true) @NotNull ModeUpdateRequest request) {
     return updateMode(null, headers, request);
   }
 

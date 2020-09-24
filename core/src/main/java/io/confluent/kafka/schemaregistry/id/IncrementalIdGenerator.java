@@ -21,10 +21,14 @@ import io.confluent.kafka.schemaregistry.rest.SchemaRegistryConfig;
 import io.confluent.kafka.schemaregistry.storage.KafkaSchemaRegistry;
 import io.confluent.kafka.schemaregistry.storage.SchemaKey;
 import io.confluent.kafka.schemaregistry.storage.SchemaValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class IncrementalIdGenerator implements IdGenerator {
 
-  private int maxIdInKafkaStore = -1;
+  Logger log = LoggerFactory.getLogger(IncrementalIdGenerator.class);
+
+  private volatile int maxIdInKafkaStore = -1;
 
   @Override
   public int id(Schema schema) throws IdGenerationException {
@@ -33,6 +37,14 @@ public class IncrementalIdGenerator implements IdGenerator {
         maxIdInKafkaStore + 1
     );
     return nextId;
+  }
+
+  @Override
+  public int getMaxId(int currentId) {
+    if (currentId > maxIdInKafkaStore) {
+      log.debug("Requested ID is greater than max ID");
+    }
+    return maxIdInKafkaStore;
   }
 
   @Override

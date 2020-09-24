@@ -17,15 +17,15 @@ package io.confluent.kafka.schemaregistry.storage;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import io.confluent.kafka.schemaregistry.rest.SchemaRegistryConfig;
+import io.confluent.kafka.schemaregistry.utils.JacksonMapper;
 
 /**
- * The identity of a schema registry instance. The master will store the json representation of its
+ * The identity of a schema registry instance. The leader will store the json representation of its
  * identity in Zookeeper.
  */
 public class SchemaRegistryIdentity {
@@ -35,31 +35,31 @@ public class SchemaRegistryIdentity {
   private Integer version;
   private String host;
   private Integer port;
-  private Boolean masterEligibility;
+  private Boolean leaderEligibility;
   private String scheme;
 
   public SchemaRegistryIdentity(
       @JsonProperty("host") String host,
       @JsonProperty("port") Integer port,
-      @JsonProperty("master_eligibility") Boolean masterEligibility,
+      @JsonProperty("master_eligibility") Boolean leaderEligibility,
       @JsonProperty(value = "scheme", defaultValue = SchemaRegistryConfig.HTTP) String scheme
   ) {
     this.version = CURRENT_VERSION;
     this.host = host;
     this.port = port;
-    this.masterEligibility = masterEligibility;
+    this.leaderEligibility = leaderEligibility;
     this.scheme = scheme;
   }
 
   public static SchemaRegistryIdentity fromJson(String json) throws IOException {
-    return new ObjectMapper().readValue(json, SchemaRegistryIdentity.class);
+    return JacksonMapper.INSTANCE.readValue(json, SchemaRegistryIdentity.class);
   }
 
   public static SchemaRegistryIdentity fromJson(ByteBuffer json) {
     try {
       byte[] jsonBytes = new byte[json.remaining()];
       json.get(jsonBytes);
-      return new ObjectMapper().readValue(jsonBytes, SchemaRegistryIdentity.class);
+      return JacksonMapper.INSTANCE.readValue(jsonBytes, SchemaRegistryIdentity.class);
     } catch (IOException e) {
       throw new IllegalArgumentException("Error deserializing identity information", e);
     }
@@ -96,13 +96,13 @@ public class SchemaRegistryIdentity {
   }
 
   @JsonProperty("master_eligibility")
-  public boolean getMasterEligibility() {
-    return this.masterEligibility;
+  public boolean getLeaderEligibility() {
+    return this.leaderEligibility;
   }
 
   @JsonProperty("master_eligibility")
-  public void setMasterEligibility(Boolean eligibility) {
-    this.masterEligibility = eligibility;
+  public void setLeaderEligibility(Boolean eligibility) {
+    this.leaderEligibility = eligibility;
   }
 
   @JsonProperty(value = "scheme", defaultValue = SchemaRegistryConfig.HTTP)
@@ -139,7 +139,7 @@ public class SchemaRegistryIdentity {
     if (!this.port.equals(that.port)) {
       return false;
     }
-    if (!this.masterEligibility.equals(that.masterEligibility)) {
+    if (!this.leaderEligibility.equals(that.leaderEligibility)) {
       return false;
     }
     if (!this.scheme.equals(that.scheme)) {
@@ -153,7 +153,7 @@ public class SchemaRegistryIdentity {
     int result = port;
     result = 31 * result + host.hashCode();
     result = 31 * result + version;
-    result = 31 * result + masterEligibility.hashCode();
+    result = 31 * result + leaderEligibility.hashCode();
     result = 31 * result + scheme.hashCode();
     return result;
   }
@@ -165,17 +165,17 @@ public class SchemaRegistryIdentity {
     sb.append("host=" + this.host + ",");
     sb.append("port=" + this.port + ",");
     sb.append("scheme=" + this.scheme + ",");
-    sb.append("masterEligibility=" + this.masterEligibility);
+    sb.append("leaderEligibility=" + this.leaderEligibility);
     return sb.toString();
   }
 
   public String toJson() throws IOException {
-    return new ObjectMapper().writeValueAsString(this);
+    return JacksonMapper.INSTANCE.writeValueAsString(this);
   }
 
   public ByteBuffer toJsonBytes() {
     try {
-      return ByteBuffer.wrap(new ObjectMapper().writeValueAsBytes(this));
+      return ByteBuffer.wrap(JacksonMapper.INSTANCE.writeValueAsBytes(this));
     } catch (IOException e) {
       throw new IllegalArgumentException("Error serializing identity information", e);
     }

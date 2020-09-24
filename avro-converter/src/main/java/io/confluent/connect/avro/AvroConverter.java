@@ -16,11 +16,12 @@
 
 package io.confluent.connect.avro;
 
+import io.confluent.kafka.schemaregistry.avro.AvroSchema;
+import io.confluent.kafka.schemaregistry.avro.AvroSchemaProvider;
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient;
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient;
 import io.confluent.kafka.serializers.AbstractKafkaAvroDeserializer;
 import io.confluent.kafka.serializers.AbstractKafkaAvroSerializer;
-import io.confluent.kafka.serializers.AvroSchemaUtils;
 import io.confluent.kafka.serializers.GenericContainerWithVersion;
 import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig;
 import io.confluent.kafka.serializers.KafkaAvroSerializerConfig;
@@ -33,6 +34,7 @@ import org.apache.kafka.connect.data.SchemaAndValue;
 import org.apache.kafka.connect.errors.DataException;
 import org.apache.kafka.connect.storage.Converter;
 
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -61,9 +63,13 @@ public class AvroConverter implements Converter {
     AvroConverterConfig avroConverterConfig = new AvroConverterConfig(configs);
 
     if (schemaRegistry == null) {
-      schemaRegistry =
-          new CachedSchemaRegistryClient(avroConverterConfig.getSchemaRegistryUrls(),
-                                         avroConverterConfig.getMaxSchemasPerSubject(), configs);
+      schemaRegistry = new CachedSchemaRegistryClient(
+          avroConverterConfig.getSchemaRegistryUrls(),
+          avroConverterConfig.getMaxSchemasPerSubject(),
+          Collections.singletonList(new AvroSchemaProvider()),
+          configs,
+          avroConverterConfig.requestHeaders()
+      );
     }
 
     serializer = new Serializer(configs, schemaRegistry);
@@ -74,9 +80,17 @@ public class AvroConverter implements Converter {
   @Override
   public byte[] fromConnectData(String topic, Schema schema, Object value) {
     try {
-      return serializer.serialize(topic, isKey, avroData.fromConnectData(schema, value));
+      org.apache.avro.Schema avroSchema = avroData.fromConnectSchema(schema);
+      return serializer.serialize(
+          topic,
+          isKey,
+          avroData.fromConnectData(schema, avroSchema, value),
+          new AvroSchema(avroSchema));
     } catch (SerializationException e) {
-      throw new DataException("Failed to serialize Avro data from topic %s :".format(topic), e);
+      throw new DataException(
+          String.format("Failed to serialize Avro data from topic %s :", topic),
+          e
+      );
     }
   }
 
@@ -96,11 +110,14 @@ public class AvroConverter implements Converter {
         return avroData.toConnectData(
             deserialized.getSchema(), ((NonRecordContainer) deserialized).getValue(), version);
       }
-      throw new DataException("Unsupported type returned during deserialization of topic %s "
-                                  .format(topic));
+      throw new DataException(
+          String.format("Unsupported type returned during deserialization of topic %s ", topic)
+      );
     } catch (SerializationException e) {
-      throw new DataException("Failed to deserialize data for topic %s to Avro: "
-                                  .format(topic), e);
+      throw new DataException(
+          String.format("Failed to deserialize data for topic %s to Avro: ", topic),
+          e
+      );
     }
   }
 
@@ -118,9 +135,15 @@ public class AvroConverter implements Converter {
       configure(new KafkaAvroSerializerConfig(configs));
     }
 
-    public byte[] serialize(String topic, boolean isKey, Object value) {
+    public byte[] serialize(
+        String topic, boolean isKey, Object value, AvroSchema schema) {
+      if (value == null) {
+        return null;
+      }
       return serializeImpl(
-          getSubjectName(topic, isKey, value, AvroSchemaUtils.getSchema(value)), value);
+          getSubjectName(topic, isKey, value, schema),
+          value,
+          schema);
     }
   }
 

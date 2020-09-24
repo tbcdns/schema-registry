@@ -32,7 +32,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class RegisterSchemaRegistryMojoTest extends SchemaRegistryTest{
+public class RegisterSchemaRegistryMojoTest extends SchemaRegistryTest {
   RegisterSchemaRegistryMojo mojo;
 
   @Before
@@ -84,6 +84,9 @@ public class RegisterSchemaRegistryMojoTest extends SchemaRegistryTest{
       if (i % 7 == 0) {
         writeMalformedFile(keySchemaFile);
         writeMalformedFile(valueSchemaFile);
+      } else {
+        writeSchema(keySchemaFile, keySchema);
+        writeSchema(valueSchemaFile, valueSchema);
       }
       subjectToFile.put(keySubject, keySchemaFile);
       expectedVersions.put(keySubject, version);

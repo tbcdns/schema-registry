@@ -15,9 +15,10 @@
 
 package io.confluent.kafka.schemaregistry.rest;
 
-import io.confluent.common.config.ConfigException;
 import io.confluent.rest.RestConfigException;
 import kafka.cluster.Broker;
+
+import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.network.ListenerName;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.junit.Test;
@@ -98,6 +99,16 @@ public class SchemaRegistryConfigTest {
         SchemaRegistryConfig
             .endpointsToBootstrapServers(endpointsList, SecurityProtocol.SASL_SSL.toString())
     );
+
+    List<String> noprotocolEndpointsList = new ArrayList<String>();
+    noprotocolEndpointsList.add("localhost0:1234");
+    noprotocolEndpointsList.add("localhost1:1234");
+
+    assertEquals(
+        "PLAINTEXT://localhost0:1234,PLAINTEXT://localhost1:1234",
+        SchemaRegistryConfig
+            .endpointsToBootstrapServers(noprotocolEndpointsList, SecurityProtocol.PLAINTEXT.toString())
+    );
   }
 
   @Test
@@ -171,5 +182,11 @@ public class SchemaRegistryConfigTest {
     assertEquals("http", config.interInstanceProtocol());
   }
 
+  @Test
+  public void defaultMutabilityMode() throws RestConfigException {
+    Properties props = new Properties();
+    SchemaRegistryConfig config = new SchemaRegistryConfig(props);
+    assertEquals(true, config.getBoolean(SchemaRegistryConfig.MODE_MUTABILITY));
+  }
 
 }

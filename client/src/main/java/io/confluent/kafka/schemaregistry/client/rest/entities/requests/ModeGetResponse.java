@@ -17,16 +17,18 @@
 package io.confluent.kafka.schemaregistry.client.rest.entities.requests;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+
+import io.confluent.kafka.schemaregistry.utils.JacksonMapper;
+import java.util.Objects;
 
 public class ModeGetResponse {
 
   private String mode;
 
   public static ModeGetResponse fromJson(String json) throws IOException {
-    return new ObjectMapper().readValue(json, ModeGetResponse.class);
+    return JacksonMapper.INSTANCE.readValue(json, ModeGetResponse.class);
   }
 
   public ModeGetResponse(@JsonProperty("mode") String mode) {
@@ -44,6 +46,23 @@ public class ModeGetResponse {
   }
 
   public String toJson() throws IOException {
-    return new ObjectMapper().writeValueAsString(this);
+    return JacksonMapper.INSTANCE.writeValueAsString(this);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    ModeGetResponse that = (ModeGetResponse) o;
+    return Objects.equals(mode, that.mode);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(mode);
   }
 }

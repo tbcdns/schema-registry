@@ -15,15 +15,16 @@
 
 package io.confluent.kafka.schemaregistry.storage;
 
-import org.codehaus.jackson.annotate.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-import io.confluent.kafka.schemaregistry.avro.AvroCompatibilityLevel;
+import io.confluent.kafka.schemaregistry.CompatibilityLevel;
 
 public class ConfigValue implements SchemaRegistryValue {
 
-  private AvroCompatibilityLevel compatibilityLevel;
+  private CompatibilityLevel compatibilityLevel;
 
-  public ConfigValue(@JsonProperty("compatibility") AvroCompatibilityLevel compatibilityLevel) {
+  public ConfigValue(@JsonProperty("compatibilityLevel")
+                     CompatibilityLevel compatibilityLevel) {
     this.compatibilityLevel = compatibilityLevel;
   }
 
@@ -31,13 +32,13 @@ public class ConfigValue implements SchemaRegistryValue {
     compatibilityLevel = null;
   }
 
-  @JsonProperty("compatibility")
-  public AvroCompatibilityLevel getCompatibilityLevel() {
+  @JsonProperty("compatibilityLevel")
+  public CompatibilityLevel getCompatibilityLevel() {
     return compatibilityLevel;
   }
 
-  @JsonProperty("compatibility")
-  public void setCompatibilityLevel(AvroCompatibilityLevel compatibilityLevel) {
+  @JsonProperty("compatibilityLevel")
+  public void setCompatibilityLevel(CompatibilityLevel compatibilityLevel) {
     this.compatibilityLevel = compatibilityLevel;
   }
 

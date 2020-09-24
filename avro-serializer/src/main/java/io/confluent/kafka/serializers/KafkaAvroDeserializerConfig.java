@@ -16,13 +16,14 @@
 
 package io.confluent.kafka.serializers;
 
-import io.confluent.common.config.ConfigDef;
-import io.confluent.common.config.ConfigDef.Type;
-import io.confluent.common.config.ConfigDef.Importance;
+
+import org.apache.kafka.common.config.ConfigDef;
+import org.apache.kafka.common.config.ConfigDef.Importance;
+import org.apache.kafka.common.config.ConfigDef.Type;
 
 import java.util.Map;
 
-public class KafkaAvroDeserializerConfig extends AbstractKafkaAvroSerDeConfig {
+public class KafkaAvroDeserializerConfig extends AbstractKafkaSchemaSerDeConfig {
 
   public static final String SPECIFIC_AVRO_READER_CONFIG = "specific.avro.reader";
   public static final boolean SPECIFIC_AVRO_READER_DEFAULT = false;

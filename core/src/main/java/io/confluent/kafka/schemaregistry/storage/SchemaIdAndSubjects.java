@@ -15,8 +15,9 @@
 
 package io.confluent.kafka.schemaregistry.storage;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
 /**
@@ -33,7 +34,12 @@ public class SchemaIdAndSubjects {
   private Map<String, Integer> subjectsAndVersions;
 
   public SchemaIdAndSubjects(int id) {
-    this.subjectsAndVersions = new HashMap<String, Integer>();
+    this.subjectsAndVersions = new ConcurrentHashMap<>();
+    this.id = id;
+  }
+
+  public SchemaIdAndSubjects(int id, Map<String, Integer> subjectsAndVersions) {
+    this.subjectsAndVersions = subjectsAndVersions;
     this.id = id;
   }
 
@@ -53,12 +59,24 @@ public class SchemaIdAndSubjects {
     return this.id;
   }
 
+  public boolean isEmpty() {
+    return subjectsAndVersions.isEmpty();
+  }
+
   public SchemaKey findAny(Predicate<SchemaKey> filter) {
     return subjectsAndVersions.entrySet().stream()
         .map(e -> new SchemaKey(e.getKey(), e.getValue()))
         .filter(key -> filter.test(key))
         .findAny()
         .orElse(null);
+  }
+
+  public Set<String> allSubjects() {
+    return subjectsAndVersions.keySet();
+  }
+
+  public Map<String, Integer> allSubjectVersions() {
+    return subjectsAndVersions;
   }
 
   public void removeIf(Predicate<SchemaKey> filter) {

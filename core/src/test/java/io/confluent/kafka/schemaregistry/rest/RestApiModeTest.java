@@ -16,12 +16,12 @@ package io.confluent.kafka.schemaregistry.rest;
 
 import org.junit.Test;
 
+import java.util.Collections;
+
 import io.confluent.kafka.schemaregistry.ClusterTestHarness;
-import io.confluent.kafka.schemaregistry.avro.AvroCompatibilityLevel;
+import io.confluent.kafka.schemaregistry.CompatibilityLevel;
 import io.confluent.kafka.schemaregistry.avro.AvroUtils;
 import io.confluent.kafka.schemaregistry.client.rest.exceptions.RestClientException;
-import io.confluent.kafka.schemaregistry.rest.exceptions.RestIncompatibleAvroSchemaException;
-import io.confluent.kafka.schemaregistry.rest.exceptions.RestInvalidSchemaException;
 import io.confluent.rest.exceptions.RestConstraintViolationException;
 
 import static org.junit.Assert.assertEquals;
@@ -34,10 +34,10 @@ public class RestApiModeTest extends ClusterTestHarness {
           + "\"name\":\"myrecord\","
           + "\"fields\":"
           + "[{\"type\":\"string\",\"name\":\"f1\"}]}")
-      .canonicalString;
+      .canonicalString();
 
   public RestApiModeTest() {
-    super(1, true, AvroCompatibilityLevel.BACKWARD.name);
+    super(1, true, CompatibilityLevel.BACKWARD.name);
   }
 
   @Test
@@ -148,5 +148,37 @@ public class RestApiModeTest extends ClusterTestHarness {
           RestConstraintViolationException.DEFAULT_ERROR_CODE,
           e.getStatus());
     }
+  }
+
+  @Test
+  public void testRegisterSchemaWithDifferentIdAfterImport() throws Exception {
+    String subject = "testSubject";
+    String mode = "READWRITE";
+
+    // set mode to read write
+    assertEquals(
+        mode,
+        restApp.restClient.setMode(mode).getMode());
+
+    int expectedIdSchema1 = 1;
+    assertEquals("Registering without id should succeed",
+        expectedIdSchema1,
+        restApp.restClient.registerSchema(SCHEMA_STRING, subject));
+
+    // delete subject so we can switch to import mode
+    restApp.restClient.deleteSubject(Collections.emptyMap(), subject);
+
+    mode = "IMPORT";
+
+    // set mode to import
+    assertEquals(
+        mode,
+        restApp.restClient.setMode(mode).getMode());
+
+    // register same schema with different id
+    expectedIdSchema1 = 2;
+    assertEquals("Registering with id should succeed",
+        expectedIdSchema1,
+        restApp.restClient.registerSchema(SCHEMA_STRING, subject, 1, expectedIdSchema1));
   }
 }

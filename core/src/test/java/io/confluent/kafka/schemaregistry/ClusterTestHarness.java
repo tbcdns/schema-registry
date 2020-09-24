@@ -16,7 +16,6 @@ package io.confluent.kafka.schemaregistry;
 
 import io.confluent.common.utils.IntegrationTest;
 import kafka.utils.CoreUtils;
-import org.I0Itec.zkclient.ZkClient;
 import org.apache.kafka.common.network.ListenerName;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.common.utils.Time;
@@ -32,16 +31,16 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Vector;
 
-import io.confluent.kafka.schemaregistry.avro.AvroCompatibilityLevel;
 import io.confluent.kafka.schemaregistry.rest.SchemaRegistryConfig;
+import io.confluent.kafka.schemaregistry.utils.ZkUtils;
+
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServer;
 import kafka.utils.TestUtils;
-import kafka.utils.ZkUtils;
 import kafka.zk.EmbeddedZookeeper;
 import scala.Option;
 import scala.Option$;
-import scala.collection.JavaConversions;
+import scala.collection.JavaConverters;
 
 /**
  * Test harness to run against a real, local Kafka cluster and REST proxy. This is essentially
@@ -89,7 +88,6 @@ public abstract class ClusterTestHarness {
   // ZK Config
   protected EmbeddedZookeeper zookeeper;
   protected String zkConnect;
-  protected ZkClient zkClient;
   protected ZkUtils zkUtils;
   protected int zkConnectionTimeout = 30000; // a larger connection timeout is required for SASL tests
                                              // because SASL connections tend to take longer.
@@ -101,7 +99,7 @@ public abstract class ClusterTestHarness {
   protected String brokerList = null;
   protected String bootstrapServers = null;
 
-  protected int schemaRegistryPort;
+  protected Integer schemaRegistryPort;
   protected RestApp restApp = null;
 
   public ClusterTestHarness() {
@@ -113,7 +111,7 @@ public abstract class ClusterTestHarness {
   }
 
   public ClusterTestHarness(int numBrokers, boolean setupRestApp) {
-    this(numBrokers, setupRestApp, AvroCompatibilityLevel.NONE.name);
+    this(numBrokers, setupRestApp, CompatibilityLevel.NONE.name);
   }
 
   public ClusterTestHarness(int numBrokers, boolean setupRestApp, String compatibilityType
@@ -132,15 +130,13 @@ public abstract class ClusterTestHarness {
   public void setUp() throws Exception {
     zookeeper = new EmbeddedZookeeper();
     zkConnect = String.format("localhost:%d", zookeeper.port());
-    zkUtils = ZkUtils.apply(
+    zkUtils = new ZkUtils(
         zkConnect, zkSessionTimeout, zkConnectionTimeout,
         setZkAcls()
     ); // true or false doesn't matter because the schema registry Kafka principal is the same as the
     // Kafka broker principal, so ACLs won't make any difference. The principals are the same because
     // ZooKeeper, Kafka, and the Schema Registry are run in the same process during testing and hence share
-    // the same JAAS configuration file. Read comments in ASLClusterTestHarness.java for more details.
-    zkClient = zkUtils.zkClient();
-
+    // the same JAAS configuration file. Read comments in SASLClusterTestHarness.java for more details.
     configs = new Vector<>();
     servers = new Vector<>();
     for (int i = 0; i < numBrokers; i++) {
@@ -153,7 +149,7 @@ public abstract class ClusterTestHarness {
 
     brokerList =
         TestUtils.getBrokerListStrFromServers(
-            JavaConversions.asScalaBuffer(servers),
+            JavaConverters.asScalaBuffer(servers),
             getSecurityProtocol()
         );
 
@@ -172,7 +168,8 @@ public abstract class ClusterTestHarness {
     bootstrapServers = Utils.join(serverUrls, ",");
 
     if (setupRestApp) {
-      schemaRegistryPort = choosePort();
+      if (schemaRegistryPort == null)
+        schemaRegistryPort = choosePort();
       Properties schemaRegistryProps = getSchemaRegistryProperties();
       schemaRegistryProps.put(SchemaRegistryConfig.LISTENERS_CONFIG, getSchemaRegistryProtocol() +
                                                                      "://0.0.0.0:"
@@ -220,7 +217,9 @@ public abstract class ClusterTestHarness {
         TestUtils.RandomPort(),
         Option.<String>empty(),
         1,
-        false
+        false,
+        1,
+        (short) 1
     );
     injectProperties(props);
     return KafkaConfig.fromProps(props);

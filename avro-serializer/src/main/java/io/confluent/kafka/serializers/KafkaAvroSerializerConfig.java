@@ -16,11 +16,11 @@
 
 package io.confluent.kafka.serializers;
 
-import io.confluent.common.config.ConfigDef;
+import org.apache.kafka.common.config.ConfigDef;
 
 import java.util.Map;
 
-public class KafkaAvroSerializerConfig extends AbstractKafkaAvroSerDeConfig {
+public class KafkaAvroSerializerConfig extends AbstractKafkaSchemaSerDeConfig {
 
   private static ConfigDef config;
 

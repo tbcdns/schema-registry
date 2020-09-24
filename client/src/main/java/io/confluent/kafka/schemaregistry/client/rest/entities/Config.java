@@ -16,13 +16,14 @@
 
 package io.confluent.kafka.schemaregistry.client.rest.entities;
 
-import org.codehaus.jackson.annotate.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.annotations.ApiModelProperty;
 
 public class Config {
 
   private String compatibilityLevel;
 
-  public Config(@JsonProperty("compatibility") String compatibilityLevel) {
+  public Config(@JsonProperty("compatibilityLevel") String compatibilityLevel) {
     this.compatibilityLevel = compatibilityLevel;
   }
 
@@ -30,12 +31,15 @@ public class Config {
     compatibilityLevel = null;
   }
 
-  @JsonProperty("compatibility")
+  @ApiModelProperty(value = "Compatability Level",
+      allowableValues = "BACKWARD, BACKWARD_TRANSITIVE, FORWARD, FORWARD_TRANSITIVE, FULL, "
+          + "FULL_TRANSITIVE, NONE")
+  @JsonProperty("compatibilityLevel")
   public String getCompatibilityLevel() {
     return compatibilityLevel;
   }
 
-  @JsonProperty("compatibility")
+  @JsonProperty("compatibilityLevel")
   public void setCompatibilityLevel(String compatibilityLevel) {
     this.compatibilityLevel = compatibilityLevel;
   }
